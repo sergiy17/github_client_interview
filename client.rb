@@ -2,35 +2,32 @@ require 'httparty'
 
 module Github
     class Client
-        # this class is responsible for making requests to the Github API
-        # It accepts a personal access token and stores it as an instance variable.
-        # It has a method called `get` that accepts a URL and returns the response
-        # from the Github API
-
         def initialize(token, repo_url)
-            # implement this method
             @token = token
             @repo_url = repo_url
         end
 
-        def get(url)
-        # this method generates the required headers that use the bearer token 
-        # and makes a GET request to the Github API using the provided URL.
-        # It returns the response from the Github API
-        # It appends the path in the url argument to the repo_url instance variable
-        # to form the full URL
-            HTTParty.get("#{@repo_url}#{url}", headers: headers)
-        end
-
-        private
-
-
-        def headers
-            # this method returns the headers required to make requests to the Github API using a personal access token
-            {
-                'Authorization' => "Bearer #{@token}",
-                'User-Agent' => 'Github Client'
+        def get(path: nil, page: 1, per_page: 50)
+            headers = {
+              'Authorization' => "Bearer #{@token}",
+              'User-Agent' => 'Github Client'
             }
+
+            response = HTTParty.get("#{@repo_url}#{path}", headers: headers, query: { page: page, per_page: per_page, state: 'closed' })
+
+            if response.success?
+                records = JSON.parse(response.body)
+
+                more_records_available = response.headers['Link']&.match(/<(.*)>; rel="next"/)&.captures&.any?
+                if more_records_available
+                    records += get(path: path, page: page += 1, per_page: per_page)
+                end
+
+                records
+            else
+                raise "Error fetching issues: #{response.code} #{response.message}"
+            end
         end
     end
+
 end
