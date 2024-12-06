@@ -13,7 +13,7 @@ module Github
               'User-Agent' => 'Github Client'
             }
 
-            response = HTTParty.get("#{@repo_url}#{path}", headers: headers, query: { page: page, per_page: per_page, state: 'closed' })
+            response = HTTParty.get("#{@repo_url}#{path}", headers: headers, query: { page: page, per_page: per_page })
 
             if response.success?
                 records = JSON.parse(response.body)
